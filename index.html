@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=yes">
-  <title>Nexson Media | Sponsorship Proposal Suite</title>
+  <title>Nexson Media | Sponsorship Vault — Cross-Device Submissions</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700;800&family=Cormorant+Garamond:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
   <style>
@@ -19,7 +19,6 @@
     }
     .dashboard { max-width: 1400px; width: 100%; margin: 0 auto; }
 
-    /* DISCREET ADMIN BUTTON */
     .discreet-admin {
       position: fixed;
       bottom: 12px;
@@ -46,7 +45,6 @@
       border-color: #a855f7;
     }
     
-    /* Admin Panel */
     .admin-panel {
       display: none;
       background: #140c28;
@@ -56,7 +54,6 @@
       border: 1px solid #4a2e8a;
       box-shadow: 0 12px 30px rgba(0,0,0,0.4);
       backdrop-filter: blur(2px);
-      transition: all 0.2s;
     }
     .admin-panel.visible { display: block; animation: fadeSlide 0.25s ease; }
     @keyframes fadeSlide { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
@@ -78,13 +75,14 @@
     .submissions-table th, .submissions-table td { border-bottom: 1px solid #352d55; padding: 12px 8px; text-align: left; }
     .submissions-table th { color: #c4b5fd; background: #1f143c; font-weight: 600; }
     .action-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
-    .view-btn, .download-submission-btn, .delete-btn { border: none; padding: 5px 12px; border-radius: 40px; font-size: 11px; font-weight: 600; cursor: pointer; transition: 0.15s; }
+    .view-btn, .download-submission-btn, .delete-btn, .export-all-btn, .import-btn { border: none; padding: 5px 12px; border-radius: 40px; font-size: 11px; font-weight: 600; cursor: pointer; transition: 0.15s; }
     .view-btn { background: #3b82f6; color: white; }
     .download-submission-btn { background: #10b981; color: white; }
     .delete-btn { background: #db2777; color: white; }
+    .export-all-btn { background: #f59e0b; color: white; }
+    .import-btn { background: #8b5cf6; color: white; }
     .no-data { text-align: center; padding: 40px; color: #b29eff; font-style: italic; }
 
-    /* Modal premium */
     .modal {
       display: none;
       position: fixed;
@@ -108,12 +106,11 @@
       position: relative;
       box-shadow: 0 25px 45px rgba(0,0,0,0.4);
     }
-    .modal-close { position: absolute; top: 20px; right: 24px; font-size: 28px; cursor: pointer; color: #7c3aed; transition: 0.1s; }
+    .modal-close { position: absolute; top: 20px; right: 24px; font-size: 28px; cursor: pointer; color: #7c3aed; }
     .detail-row { margin-bottom: 14px; display: flex; flex-wrap: wrap; border-bottom: 1px solid #ede5ff; padding-bottom: 8px; }
     .detail-label { font-weight: 800; width: 150px; color: #5b21b6; font-size: 13px; }
     .detail-value { flex: 1; color: #1f1a2e; word-break: break-word; font-weight: 500; }
 
-    /* Admin Tools */
     .admin-tools {
       position: fixed;
       bottom: 16px;
@@ -121,8 +118,10 @@
       display: flex;
       gap: 10px;
       z-index: 998;
+      flex-wrap: wrap;
+      max-width: 90%;
     }
-    .download-form-btn, .logout-btn {
+    .download-form-btn, .logout-btn, .export-data-btn, .import-data-btn {
       background: rgba(16, 185, 129, 0.8);
       backdrop-filter: blur(5px);
       border: none;
@@ -136,11 +135,11 @@
       display: none;
       box-shadow: 0 2px 8px rgba(0,0,0,0.2);
     }
-    .download-form-btn.visible, .logout-btn.visible { display: flex; align-items: center; gap: 6px; }
-    .download-form-btn:hover, .logout-btn:hover { transform: scale(1.02); filter: brightness(1.05); }
+    .export-data-btn { background: rgba(245, 158, 11, 0.9); }
+    .import-data-btn { background: rgba(139, 92, 246, 0.9); }
+    .download-form-btn.visible, .logout-btn.visible, .export-data-btn.visible, .import-data-btn.visible { display: flex; align-items: center; gap: 6px; }
     .logout-btn { background: rgba(220, 38, 38, 0.85); }
 
-    /* Proposal Form Styles (elegant & dynamic) */
     .proposal-cover {
       max-width: 1100px;
       width: 100%;
@@ -149,13 +148,9 @@
       box-shadow: 0 30px 55px rgba(0, 0, 0, 0.3);
       position: relative;
       overflow: hidden;
-      transition: all 0.2s;
     }
     .cover-content { padding: 30px 24px 40px; position: relative; z-index: 2; background: white; }
     @media (min-width: 768px) { .cover-content { padding: 48px 52px 56px; } }
-    .wave-top, .wave-bottom { position: absolute; left: 0; width: 100%; pointer-events: none; filter: blur(2px); opacity: 0.6; }
-    .wave-top { top: 0; height: 150px; background: radial-gradient(circle at 20% 10%, rgba(98,0,234,0.1), rgba(156,68,255,0.05)); border-bottom-right-radius: 80% 30%; }
-    .wave-bottom { bottom: 0; height: 130px; background: radial-gradient(circle at 80% 90%, rgba(128,0,255,0.08), rgba(200,130,255,0.02)); border-top-left-radius: 70% 35%; }
     .glossy-logo { display: inline-flex; justify-content: center; align-items: center; background: linear-gradient(145deg, #6b21e5, #3b0764, #a855f7); width: 75px; height: 75px; border-radius: 24px; box-shadow: 0 15px 25px -8px rgba(107,33,229,0.5); }
     @media (min-width: 768px) { .glossy-logo { width: 90px; height: 90px; } }
     .glossy-logo span { font-size: 48px; font-weight: 800; background: linear-gradient(135deg, #f3e8ff, #e9c6ff, white); background-clip: text; -webkit-background-clip: text; color: transparent; }
@@ -172,49 +167,51 @@
     .handwritten { font-family: 'Cormorant Garamond', cursive; font-size: 26px; font-weight: 700; font-style: italic; color: #2b0e40; border-bottom: 2px dotted #b28aff; display: inline-block; letter-spacing: 1px; }
     .single-signature-box { display: flex; flex-direction: column; gap: 24px; margin-top: 28px; }
     @media (min-width: 768px) { .single-signature-box { flex-direction: row; gap: 28px; } }
-    .working-box { border: 1.5px solid #e2d3ff; background: #fefcff; border-radius: 28px; padding: 20px 20px; flex: 1; box-shadow: 0 4px 12px rgba(0,0,0,0.02); }
+    .working-box { border: 1.5px solid #e2d3ff; background: #fefcff; border-radius: 28px; padding: 20px 20px; flex: 1; }
     .fill-row { margin-bottom: 16px; display: flex; flex-direction: column; gap: 6px; }
     @media (min-width: 480px) { .fill-row { flex-direction: row; align-items: baseline; gap: 12px; } }
     .fill-label { font-weight: 700; font-size: 13px; min-width: 110px; color: #4a3580; }
-    .btn-submit { background: linear-gradient(95deg, #6d28d9, #a855f7); border: none; padding: 14px 28px; border-radius: 60px; color: white; font-weight: 700; cursor: pointer; margin-top: 30px; width: 100%; transition: all 0.2s; font-size: 16px; letter-spacing: 0.5px; display: flex; align-items: center; justify-content: center; gap: 10px; }
-    .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 14px 28px -8px rgba(107,33,229,0.6); background: linear-gradient(95deg, #7c3aed, #c084fc);}
+    .btn-submit { background: linear-gradient(95deg, #6d28d9, #a855f7); border: none; padding: 14px 28px; border-radius: 60px; color: white; font-weight: 700; cursor: pointer; margin-top: 30px; width: 100%; transition: all 0.2s; font-size: 16px; display: flex; align-items: center; justify-content: center; gap: 10px; }
+    .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 14px 28px -8px rgba(107,33,229,0.6); }
     @media (min-width: 480px) { .btn-submit { width: auto; } }
-    .success-toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #201536; color: #e9d5ff; padding: 12px 24px; border-radius: 60px; z-index: 1100; border-left: 5px solid #c084fc; font-size: 13px; font-weight: 500; backdrop-filter: blur(8px); box-shadow: 0 8px 20px rgba(0,0,0,0.4); white-space: nowrap; }
-    @media (min-width: 768px) { .success-toast { left: auto; right: 25px; transform: none; white-space: normal; } }
+    .success-toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #201536; color: #e9d5ff; padding: 12px 24px; border-radius: 60px; z-index: 1100; border-left: 5px solid #c084fc; font-size: 13px; font-weight: 500; backdrop-filter: blur(8px); white-space: nowrap; }
+    @media (min-width: 768px) { .success-toast { left: auto; right: 25px; transform: none; } }
     .info-flex { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
-    ::placeholder { color: #c2b3e3; font-weight: 400; font-size: 12px; }
-    hr { border-color: #e2d3ff; margin: 6px 0; }
+    .agency-note { background:#faf7ff; padding:16px 20px; border-radius:28px; border-left:6px solid #a855f7; margin-bottom:24px; }
+    .file-input-label { background: #8b5cf6; padding: 5px 12px; border-radius: 40px; font-size: 11px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; }
+    #importFile { display: none; }
   </style>
 </head>
 <body>
 <div class="dashboard">
-  <!-- DISCREET ADMIN BUTTON (phantom style) -->
-  <button id="discreetAdminBtn" class="discreet-admin" title="Admin Access">⚡ ADMIN</button>
+  <button id="discreetAdminBtn" class="discreet-admin">⚡ ADMIN</button>
   
-  <!-- Admin Tools (download form & logout) -->
   <div class="admin-tools">
-    <button id="downloadFormBtn" class="download-form-btn"><i class="fas fa-download"></i> Export Form</button>
+    <button id="downloadFormBtn" class="download-form-btn"><i class="fas fa-download"></i> Export Form HTML</button>
+    <button id="exportDataBtn" class="export-data-btn"><i class="fas fa-cloud-upload-alt"></i> Export All Data</button>
+    <label class="import-data-btn" style="display: none;" id="importLabelBtn"><i class="fas fa-cloud-download-alt"></i> Import Data <input type="file" id="importFile" accept=".json" style="display: none;"></label>
     <button id="logoutBtn" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Exit Admin</button>
   </div>
 
-  <!-- Admin Dashboard -->
   <div id="adminPanel" class="admin-panel">
     <div class="admin-title">
-      <span><i class="fas fa-crown"></i> Submissions Vault</span>
-      <span><i class="fas fa-database"></i> Total: <span id="submissionCount">0</span></span>
+      <span><i class="fas fa-database"></i> Submission Vault (Cross-Device)</span>
+      <span>Total: <span id="submissionCount">0</span></span>
+    </div>
+    <div style="margin-bottom: 16px; display: flex; gap: 10px; flex-wrap: wrap;">
+      <button id="exportAllBtn" class="export-all-btn"><i class="fas fa-download"></i> Export All as JSON</button>
+      <label class="import-btn" style="background:#8b5cf6; padding:5px 12px; border-radius:40px; cursor:pointer; display:inline-flex; align-items:center; gap:5px;"><i class="fas fa-upload"></i> Import JSON <input type="file" id="importSubmissionsFile" accept=".json" style="display:none;"></label>
+      <button id="clearAllBtn" class="delete-btn" style="background:#dc2626;"><i class="fas fa-trash"></i> Clear All</button>
     </div>
     <div style="overflow-x: auto;">
       <table class="submissions-table">
-        <thead><tr><th>ID</th><th>Location</th><th>Contact</th><th>Date</th><th>Name</th><th>Designation</th><th>Actions</th></tr></thead>
-        <tbody id="submissionsTableBody"><tr class="no-data"><td colspan="7">✨ No entries yet — submit a sponsorship proposal. ✨</td></tr></tbody>
-       </table>
+        <thead><tr><th>ID</th><th>Location</th><th>Contact</th><th>Date</th><th>Working Name</th><th>Designation</th><th>Actions</th></tr></thead>
+        <tbody id="submissionsTableBody"><tr class="no-data"><td colspan="7">✨ Loading submissions... ✨</td></tr></tbody>
+      </table>
     </div>
   </div>
 
-  <!-- MAIN PROPOSAL FORM -->
   <div id="proposalFormContainer" class="proposal-cover">
-    <div class="wave-top"></div>
-    <div class="wave-bottom"></div>
     <div class="cover-content">
       <div style="text-align:center;">
         <div class="glossy-logo"><span>N<i class="fas fa-arrow-up"></i></span></div>
@@ -225,7 +222,7 @@
       
       <div style="display:flex; align-items:center; gap:12px; margin:20px 0;"><div style="background:#9b4dff; width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white;"><i class="fas fa-user-check"></i></div><div>Prepared for: <strong>Nexson Media Team</strong></div></div>
       
-      <div style="background:#faf7ff; padding:16px 20px; border-radius:28px; border-left:6px solid #a855f7; margin-bottom:24px; box-shadow: 0 2px 8px rgba(0,0,0,0.02);"><i class="fas fa-quote-left" style="color:#a855f7; margin-right:8px;"></i> We are excited to present this sponsorship proposal outlining opportunities for collaboration that create meaningful connections and deliver mutual growth. Together, we can build a powerful partnership that drives impact, engages audiences, and elevates brand visibility.</div>
+      <div class="agency-note"><i class="fas fa-quote-left" style="color:#a855f7; margin-right:8px;"></i> We are excited to present this sponsorship proposal outlining opportunities for collaboration that create meaningful connections and deliver mutual growth.</div>
       
       <div style="border:1.5px solid #d9c5ff; background:#fefcff; border-radius:28px; padding:16px 20px; display:flex; gap:14px; margin-bottom:30px;"><div style="background:#f0e6ff; width:42px; height:42px; border-radius:30px; display:flex; align-items:center; justify-content:center; color:#8b5cf6;"><i class="fas fa-shield-alt"></i></div><div><strong style="color:#6d28d9;">🔖 Agency Rule</strong><br>“If you wish to leave the team, you must inform the Team Owner in advance and provide a valid reason. Failure to do so will be considered a violation.”</div></div>
 
@@ -235,10 +232,9 @@
           <div class="info-flex"><i class="fas fa-phone-alt" style="color:#a855f7; width:28px;"></i><span style="font-weight:700;">Contact:</span><input type="text" id="contactField" class="fillable-input" placeholder="Email / Phone Number" value=""></div>
           <div class="info-flex"><i class="far fa-calendar-alt" style="color:#a855f7; width:28px;"></i><span style="font-weight:700;">Date:</span><input type="text" id="dateField" class="fillable-input" placeholder="DD/MM/YYYY" value=""></div>
         </div>
-        <div class="signature-area"><div class="handwritten">NM_YASH</div><div style="font-size:11px; font-weight:600; margin-top:6px;">Authorized Signature</div><div>Team Owner</div></div>
+        <div class="signature-area"><div class="handwritten">NM_YASH</div><div style="font-size:11px; font-weight:600; margin-top:6px;">Authorized Signature</div><div>Team Owner — Nexson Media</div></div>
       </div>
 
-      <!-- Single Section: Working Person Details (Owner Signature Removed) -->
       <div class="single-signature-box">
         <div class="working-box"><h4 style="margin-bottom:16px;"><i class="fas fa-briefcase"></i> 📋 Working Person Details</h4>
           <div class="fill-row"><span class="fill-label">Full Name:</span><input type="text" id="workingName" class="line-input-border" placeholder="e.g., John Carter" value=""></div>
@@ -255,24 +251,24 @@
 <div id="detailModal" class="modal"><div class="modal-content"><span class="modal-close" id="closeModal">&times;</span><div style="font-size: 24px; font-weight: 700; margin-bottom: 16px;"><i class="fas fa-file-alt"></i> Submission Details</div><div id="modalDetails"></div><div style="margin-top:24px; display: flex; justify-content: flex-end;"><button id="downloadFromModalBtn" class="download-submission-btn" style="background:#7c3aed;"><i class="fas fa-download"></i> Save as .txt</button></div></div></div>
 
 <script>
-  // ADMIN SECURE PASSWORD
   const ADMIN_PASSWORD = "yashguptanexsonmedia1212";
   let isAdminLoggedIn = false;
   let submissions = [];
   let currentModalData = null;
 
-  // Load from localStorage (permanent storage)
+  // Load from localStorage
   function loadSubmissions() {
-    const stored = localStorage.getItem('nexson_proposal_submissions_permanent');
+    const stored = localStorage.getItem('nexson_proposal_submissions');
     submissions = stored ? JSON.parse(stored) : [];
     if(isAdminLoggedIn) renderAdminTable();
     updateCount();
   }
   
   function saveSubmissions() { 
-    localStorage.setItem('nexson_proposal_submissions_permanent', JSON.stringify(submissions)); 
+    localStorage.setItem('nexson_proposal_submissions', JSON.stringify(submissions)); 
     if(isAdminLoggedIn) renderAdminTable(); 
     updateCount(); 
+    showToast("💾 Data saved locally on this device");
   }
   
   function updateCount() { 
@@ -280,11 +276,13 @@
     if(counterSpan) counterSpan.innerText = submissions.length; 
   }
   
+  function escapeHtml(str) { if(!str) return ''; return str.replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])); }
+  
   function renderAdminTable() {
     const tbody = document.getElementById('submissionsTableBody');
     if(!tbody) return;
     if(submissions.length === 0) { 
-      tbody.innerHTML = '<tr class="no-data"><td colspan="7">📭 No submissions yet — fill the proposal form. 📭</td></tr>'; 
+      tbody.innerHTML = '<tr class="no-data"><td colspan="7">📭 No submissions yet — fill the proposal form above. 📭</td></tr>'; 
       return; 
     }
     let html = '';
@@ -304,19 +302,18 @@
       </tr>`;
     });
     tbody.innerHTML = html;
+    
     document.querySelectorAll('.view-btn').forEach(btn => btn.addEventListener('click', (e) => { const idx = parseInt(btn.dataset.index); if(!isNaN(idx)) showModal(idx); }));
     document.querySelectorAll('.download-submission-btn').forEach(btn => btn.addEventListener('click', (e) => { const idx = parseInt(btn.dataset.index); if(!isNaN(idx)) downloadSubmission(idx); }));
     document.querySelectorAll('.delete-btn').forEach(btn => btn.addEventListener('click', (e) => { 
       const idx = parseInt(btn.dataset.index); 
-      if(confirm("⚠️ Permanently delete this submission? This action cannot be undone.")) { 
+      if(confirm("⚠️ Delete this submission permanently?")) { 
         submissions.splice(idx,1); 
         saveSubmissions(); 
-        showToast("🗑️ Submission deleted permanently from vault."); 
+        showToast("🗑️ Submission deleted"); 
       } 
     }));
   }
-  
-  function escapeHtml(str) { if(!str) return ''; return str.replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])); }
   
   function showModal(idx) { 
     const d = submissions[idx]; 
@@ -337,7 +334,7 @@
   function downloadSubmission(idx) { 
     const s = submissions[idx]; 
     if(!s) return; 
-    const content = `🏛️ NEXSON MEDIA SPONSORSHIP SUBMISSION (OFFICIAL)
+    const content = `🏛️ NEXSON MEDIA SPONSORSHIP SUBMISSION
 ═══════════════════════════════════════════
 📍 Location: ${s.location}
 📞 Contact Info: ${s.contactInfo}
@@ -348,21 +345,14 @@
    Designation: ${s.designation}
    Signature: ${s.signatureText}
 ⏱️ Submitted: ${s.timestamp}
-═══════════════════════════════════════════
-Nexson Media — Official Partnership Record`;
+═══════════════════════════════════════════`;
     const blob = new Blob([content], {type:'text/plain'}); 
     const a = document.createElement('a'); 
     a.href = URL.createObjectURL(blob); 
     a.download = `Nexson_Submission_${s.name.replace(/\s/g,'_')}.txt`; 
     a.click(); 
     URL.revokeObjectURL(a.href); 
-    showToast("✅ Submission TXT downloaded"); 
-  }
-  
-  function addSubmission(data) { 
-    submissions.unshift(data); 
-    saveSubmissions(); 
-    showToast("🎉 Proposal submitted & permanently saved in admin dashboard!"); 
+    showToast("✅ TXT downloaded"); 
   }
   
   function submitProposal() {
@@ -378,16 +368,21 @@ Nexson Media — Official Partnership Record`;
       return; 
     }
     
-    addSubmission({ 
+    const newSubmission = { 
       location: loc, 
       contactInfo: con, 
       date: dat, 
       name: nam, 
       designation: des, 
       signatureText: sig,
-      timestamp: new Date().toLocaleString('en-IN', { hour12: true }) 
-    });
-    // Reset entire form fields after successful submission
+      timestamp: new Date().toLocaleString('en-IN', { hour12: true }),
+      id: Date.now()
+    };
+    
+    submissions.unshift(newSubmission); 
+    saveSubmissions(); 
+    showToast("🎉 Proposal submitted successfully!");
+    
     document.getElementById('locationField').value = '';
     document.getElementById('contactField').value = '';
     document.getElementById('dateField').value = '';
@@ -403,55 +398,75 @@ Nexson Media — Official Partnership Record`;
     const blob = new Blob([fullHtml], {type:'text/html'});
     const a = document.createElement('a'); 
     a.href = URL.createObjectURL(blob); 
-    a.download = 'Nexson_Sponsorship_Form_Standalone.html'; 
+    a.download = 'Nexson_Sponsorship_Form.html'; 
     a.click(); 
     URL.revokeObjectURL(a.href); 
-    showToast("📄 Proposal form HTML exported"); 
+    showToast("📄 Form HTML exported"); 
   }
   
-  // Admin login/logic
-  const discreetBtn = document.getElementById('discreetAdminBtn');
-  const adminPanelDiv = document.getElementById('adminPanel');
-  const downloadBtn = document.getElementById('downloadFormBtn');
-  const logoutBtnElem = document.getElementById('logoutBtn');
+  function exportAllData() {
+    const dataStr = JSON.stringify(submissions, null, 2);
+    const blob = new Blob([dataStr], {type: 'application/json'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `nexson_submissions_${new Date().toISOString().slice(0,19)}.json`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    showToast("📦 All data exported as JSON");
+  }
+  
+  function importDataFromFile(file) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        const imported = JSON.parse(e.target.result);
+        if(Array.isArray(imported)) {
+          submissions = [...imported, ...submissions];
+          saveSubmissions();
+          showToast(`✅ Imported ${imported.length} entries successfully`);
+        } else {
+          alert("Invalid format: Expected array of submissions");
+        }
+      } catch(err) {
+        alert("Error parsing JSON file");
+      }
+    };
+    reader.readAsText(file);
+  }
+  
+  function clearAllSubmissions() {
+    if(confirm("⚠️ DANGER: This will delete ALL submissions from this device. This action cannot be undone. Continue?")) {
+      submissions = [];
+      saveSubmissions();
+      showToast("🗑️ All submissions cleared");
+    }
+  }
   
   function adminLogin() {
     const pwd = prompt("🔐 Admin credentials required:");
     if(pwd === ADMIN_PASSWORD) {
       isAdminLoggedIn = true;
-      adminPanelDiv.classList.add('visible');
-      downloadBtn.classList.add('visible');
-      logoutBtnElem.classList.add('visible');
+      document.getElementById('adminPanel').classList.add('visible');
+      document.getElementById('downloadFormBtn').classList.add('visible');
+      document.getElementById('exportDataBtn').classList.add('visible');
+      document.getElementById('importLabelBtn').style.display = 'flex';
+      document.getElementById('logoutBtn').classList.add('visible');
       renderAdminTable();
-      showToast("✅ Admin mode activated • Dashboard ready");
+      showToast("✅ Admin mode activated");
     } else if(pwd !== null) {
-      alert("⛔ Invalid password. Access denied.");
+      alert("⛔ Invalid password.");
     }
   }
   
   function logout() {
     isAdminLoggedIn = false;
-    adminPanelDiv.classList.remove('visible');
-    downloadBtn.classList.remove('visible');
-    logoutBtnElem.classList.remove('visible');
-    showToast("🔒 Admin mode closed • Standard view restored");
+    document.getElementById('adminPanel').classList.remove('visible');
+    document.getElementById('downloadFormBtn').classList.remove('visible');
+    document.getElementById('exportDataBtn').classList.remove('visible');
+    document.getElementById('importLabelBtn').style.display = 'none';
+    document.getElementById('logoutBtn').classList.remove('visible');
+    showToast("🔒 Admin mode closed");
   }
-  
-  discreetBtn.addEventListener('click', adminLogin);
-  logoutBtnElem.addEventListener('click', logout);
-  downloadBtn.addEventListener('click', downloadForm);
-  document.getElementById('submitProposalBtn').addEventListener('click', submitProposal);
-  
-  // Modal close handlers
-  document.getElementById('closeModal').onclick = () => document.getElementById('detailModal').style.display = 'none';
-  window.onclick = (e) => { if(e.target === document.getElementById('detailModal')) document.getElementById('detailModal').style.display = 'none'; };
-  document.getElementById('downloadFromModalBtn').onclick = () => { 
-    if(currentModalData) { 
-      const idx = submissions.findIndex(s => s.timestamp === currentModalData.timestamp && s.name === currentModalData.name); 
-      if(idx !== -1) downloadSubmission(idx); 
-      else showToast("⚠️ Could not locate submission data");
-    } 
-  };
   
   function showToast(msg) { 
     const t = document.createElement('div'); 
@@ -460,6 +475,27 @@ Nexson Media — Official Partnership Record`;
     document.body.appendChild(t); 
     setTimeout(() => t.remove(), 3000); 
   }
+  
+  document.getElementById('discreetAdminBtn').addEventListener('click', adminLogin);
+  document.getElementById('logoutBtn').addEventListener('click', logout);
+  document.getElementById('downloadFormBtn').addEventListener('click', downloadForm);
+  document.getElementById('exportDataBtn').addEventListener('click', exportAllData);
+  document.getElementById('exportAllBtn')?.addEventListener('click', exportAllData);
+  document.getElementById('clearAllBtn')?.addEventListener('click', clearAllSubmissions);
+  document.getElementById('submitProposalBtn').addEventListener('click', submitProposal);
+  document.getElementById('closeModal').onclick = () => document.getElementById('detailModal').style.display = 'none';
+  window.onclick = (e) => { if(e.target === document.getElementById('detailModal')) document.getElementById('detailModal').style.display = 'none'; };
+  document.getElementById('downloadFromModalBtn').onclick = () => { 
+    if(currentModalData) { 
+      const idx = submissions.findIndex(s => s.timestamp === currentModalData.timestamp && s.name === currentModalData.name); 
+      if(idx !== -1) downloadSubmission(idx); 
+    } 
+  };
+  
+  document.getElementById('importSubmissionsFile')?.addEventListener('change', (e) => {
+    if(e.target.files[0]) importDataFromFile(e.target.files[0]);
+    e.target.value = '';
+  });
   
   loadSubmissions();
 </script>
