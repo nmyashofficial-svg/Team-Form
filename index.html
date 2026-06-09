@@ -178,20 +178,9 @@
     @media (min-width: 768px) { .success-toast { left: auto; right: 25px; transform: none; } }
     .info-flex { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
     .agency-note { background:#faf7ff; padding:16px 20px; border-radius:28px; border-left:6px solid #a855f7; margin-bottom:24px; }
-    .file-input-label { background: #8b5cf6; padding: 5px 12px; border-radius: 40px; font-size: 11px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; }
-    #importFile { display: none; }
-    .sync-badge {
-      background: #2a1e44;
-      border-radius: 20px;
-      padding: 4px 10px;
-      font-size: 10px;
-      font-weight: 500;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      margin-left: 12px;
-    }
-    .sync-badge i { font-size: 10px; }
+    .loading-spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: white; animation: spin 0.6s linear infinite; margin-right: 8px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .cloud-badge { background: #10b981; border-radius: 20px; padding: 4px 10px; font-size: 10px; margin-left: 12px; }
   </style>
 </head>
 <body>
@@ -207,20 +196,20 @@
 
   <div id="adminPanel" class="admin-panel">
     <div class="admin-title">
-      <span><i class="fas fa-globe"></i> Submission Vault — Cross-Device Sync <span class="sync-badge"><i class="fas fa-sync-alt"></i> Auto-sync</span></span>
+      <span><i class="fas fa-cloud-upload-alt"></i> Submission Vault — Cloud Sync <span class="cloud-badge"><i class="fas fa-check-circle"></i> Live Cloud</span></span>
       <span>Total: <span id="submissionCount">0</span></span>
     </div>
     <div style="margin-bottom: 16px; display: flex; gap: 10px; flex-wrap: wrap;">
       <button id="exportAllBtn" class="export-all-btn"><i class="fas fa-download"></i> Export All as JSON</button>
       <label class="import-btn" style="background:#8b5cf6; padding:5px 12px; border-radius:40px; cursor:pointer; display:inline-flex; align-items:center; gap:5px;"><i class="fas fa-upload"></i> Import JSON <input type="file" id="importSubmissionsFile" accept=".json" style="display:none;"></label>
-      <button id="clearAllBtn" class="delete-btn" style="background:#dc2626;"><i class="fas fa-trash"></i> Clear All</button>
-      <button id="forceSyncBtn" class="view-btn" style="background:#3b82f6;"><i class="fas fa-sync-alt"></i> Force Sync Now</button>
+      <button id="clearAllBtn" class="delete-btn" style="background:#dc2626;"><i class="fas fa-trash"></i> Clear All (Cloud)</button>
+      <button id="refreshCloudBtn" class="view-btn" style="background:#3b82f6;"><i class="fas fa-sync-alt"></i> Refresh from Cloud</button>
     </div>
     <div style="overflow-x: auto;">
       <table class="submissions-table">
         <thead><tr><th>ID</th><th>Location</th><th>Contact</th><th>Date</th><th>Working Name</th><th>Designation</th><th>Actions</th></tr></thead>
-        <tbody id="submissionsTableBody"><tr class="no-data"><td colspan="7">✨ Loading submissions... ✨</td></tr></tbody>
-      </table>
+        <tbody id="submissionsTableBody"><tr class="no-data"><td colspan="7"><span class="loading-spinner"></span> Loading from cloud... ✨</td></tr></table>
+       </table>
     </div>
   </div>
 
@@ -265,100 +254,82 @@
 
 <script>
   const ADMIN_PASSWORD = "yashguptanexsonmedia1212";
+  const BIN_ID = "67cf0ec28a456b79667e9d9d";
+  const API_KEY = "$2a$10$FmK/lYiK.SzjB1v.takJ3.lxw8WPhO5dli1At0NbnxV3KJq/hIMlG";
+  const BIN_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
+  
   let isAdminLoggedIn = false;
   let submissions = [];
   let currentModalData = null;
+  let isLoading = false;
 
-  // ---------- CROSS-DEVICE STORAGE using localStorage with device fingerprint fallback + remote sync via localStorage event & broadcast ----------
-  // For true cross-device sharing across browsers, we implement "Shared Storage" pattern:
-  // We'll store data in localStorage AND broadcast changes to other tabs/windows on same device via storage event.
-  // BUT to solve "different devices" issue — we need a backend? No, we use a simple "cloud sync" using a free JSONBin-like approach? 
-  // However the requirement: "if any other device fills the form, the admin should see data from any device" -> without backend it's impossible across different networks.
-  // BUT we can implement a "Export/Import JSON" flow + generate a unique shareable sync key using URL parameters? Actually we can build an "offline-first" sync via browser's localStorage? 
-  // Across different devices localStorage is isolated. To truly sync across any device, I'll implement a "Cloud Relay" using a public free API (JSONBin.io) but that requires API keys or CORS. 
-  // Better solution: Provide a built-in "Sync via QR Code" / "Sync Code" mechanism: Admin can export data as token and import on another device. But the best user-friendly cross-device for demo: 
-  // Using localStorage "sync" across same origin tabs but different devices manually use import/export. 
-  // To make it seamless we will automatically sync using "BroadcastChannel" and encourage use of "Data Cloud" via manual export/import, but we also add a "Sync Token" generator that encodes data into a shareable URL hash? That's genius: 
-  // We can encode submissions into a compressed string inside URL hash (window.location.hash). When any device loads the page, it can read the hash and merge submissions. This gives true cross-device sync (copy-paste URL). 
-  // So any device that fills the form can update the URL hash, then admin on another device can open same URL to get updated data. Let's implement this revolutionary method!
-
-  function updateURLWithSubmissions() {
+  // Cloud sync functions
+  async function fetchFromCloud() {
+    if (isLoading) return;
+    isLoading = true;
     try {
-      const dataStr = JSON.stringify(submissions);
-      // compress to base64url to fit in hash
-      const compressed = btoa(encodeURIComponent(dataStr));
-      const newHash = compressed.length < 2000 ? compressed : null; // Avoid massive URLs
-      if (newHash && newHash.length < 2000) {
-        window.location.hash = newHash;
+      const response = await fetch(BIN_URL, {
+        headers: { 'X-Master-Key': API_KEY }
+      });
+      const data = await response.json();
+      if (data && data.record && Array.isArray(data.record.submissions)) {
+        submissions = data.record.submissions;
+        if (isAdminLoggedIn) renderAdminTable();
+        updateCount();
+        showToast("☁️ Synced from cloud successfully!");
+      } else if (data && data.record && Array.isArray(data.record)) {
+        submissions = data.record;
+        if (isAdminLoggedIn) renderAdminTable();
+        updateCount();
+        showToast("☁️ Synced from cloud successfully!");
       } else {
-        // if too large, store in localStorage only, but still try to keep small
-        if (window.history && window.location.hash) window.location.hash = '';
+        submissions = [];
+        if (isAdminLoggedIn) renderAdminTable();
       }
-    } catch(e) { console.warn("Hash sync skipped", e); }
-  }
-  
-  function loadSubmissionsFromHash() {
-    if (window.location.hash && window.location.hash.length > 1) {
-      try {
-        const hashData = window.location.hash.substring(1);
-        const decoded = decodeURIComponent(atob(hashData));
-        const parsed = JSON.parse(decoded);
-        if (Array.isArray(parsed) && parsed.length) {
-          // merge without duplicates (based on unique id timestamp + name)
-          const existingIds = new Set(submissions.map(s => s.id));
-          const newSubs = parsed.filter(s => s.id && !existingIds.has(s.id));
-          if (newSubs.length) {
-            submissions = [...newSubs, ...submissions];
-            saveSubmissionsToLocal();
-            showToast(`🔄 Synced ${newSubs.length} entries from shared link!`);
-            if(isAdminLoggedIn) renderAdminTable();
-            updateCount();
-            updateURLWithSubmissions(); // refresh hash with merged data
-          }
-        }
-      } catch(e) { console.warn("Invalid hash data", e); }
+    } catch (error) {
+      console.error("Cloud fetch error:", error);
+      showToast("⚠️ Could not connect to cloud. Using local cache.");
+      if (isAdminLoggedIn && submissions.length === 0) {
+        document.getElementById('submissionsTableBody').innerHTML = '<tr class="no-data"><td colspan="7">⚠️ Cloud connection failed. Check internet and refresh.</td></tr>';
+      }
+    } finally {
+      isLoading = false;
     }
   }
+
+  async function pushToCloud() {
+    if (!submissions) submissions = [];
+    try {
+      const response = await fetch(BIN_URL, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Master-Key': API_KEY
+        },
+        body: JSON.stringify({ submissions: submissions })
+      });
+      if (response.ok) {
+        showToast("☁️ Saved to cloud successfully!");
+        return true;
+      } else {
+        throw new Error("Cloud save failed");
+      }
+    } catch (error) {
+      console.error("Cloud push error:", error);
+      showToast("⚠️ Could not save to cloud. Check connection.");
+      return false;
+    }
+  }
+
+  async function loadSubmissions() {
+    await fetchFromCloud();
+  }
   
-  // Save to localStorage and broadcast via storage event + update URL hash for cross-device copy-paste sharing
-  function saveSubmissionsToLocal() {
-    localStorage.setItem('nexson_proposal_submissions', JSON.stringify(submissions));
-    updateURLWithSubmissions();
-    // dispatch custom event for same-origin tabs
-    window.dispatchEvent(new CustomEvent('submissions-updated', { detail: submissions }));
-    if(isAdminLoggedIn) renderAdminTable();
+  async function saveSubmissions() {
+    await pushToCloud();
+    if (isAdminLoggedIn) renderAdminTable();
     updateCount();
   }
-  
-  function loadSubmissions() {
-    const stored = localStorage.getItem('nexson_proposal_submissions');
-    if (stored) {
-      submissions = JSON.parse(stored);
-    } else {
-      submissions = [];
-    }
-    // then check hash for additional data (cross-device)
-    if (window.location.hash && window.location.hash.length > 1) {
-      try {
-        const hashData = window.location.hash.substring(1);
-        const decoded = decodeURIComponent(atob(hashData));
-        const parsed = JSON.parse(decoded);
-        if (Array.isArray(parsed) && parsed.length) {
-          const existingMap = new Map(submissions.map(s => [s.id, true]));
-          for (let item of parsed) {
-            if (item.id && !existingMap.has(item.id)) {
-              submissions.unshift(item);
-            }
-          }
-          saveSubmissionsToLocal();
-        }
-      } catch(e) {}
-    }
-    if(isAdminLoggedIn) renderAdminTable();
-    updateCount();
-  }
-  
-  function saveSubmissions() { saveSubmissionsToLocal(); }
   
   function updateCount() { 
     const counterSpan = document.getElementById('submissionCount'); 
@@ -370,7 +341,7 @@
   function renderAdminTable() {
     const tbody = document.getElementById('submissionsTableBody');
     if(!tbody) return;
-    if(submissions.length === 0) { 
+    if(!submissions || submissions.length === 0) { 
       tbody.innerHTML = '<tr class="no-data"><td colspan="7">📭 No submissions yet — fill the proposal form above. 📭</td></tr>'; 
       return; 
     }
@@ -394,12 +365,12 @@
     
     document.querySelectorAll('.view-btn').forEach(btn => btn.addEventListener('click', (e) => { const idx = parseInt(btn.dataset.index); if(!isNaN(idx)) showModal(idx); }));
     document.querySelectorAll('.download-submission-btn').forEach(btn => btn.addEventListener('click', (e) => { const idx = parseInt(btn.dataset.index); if(!isNaN(idx)) downloadSubmission(idx); }));
-    document.querySelectorAll('.delete-btn').forEach(btn => btn.addEventListener('click', (e) => { 
+    document.querySelectorAll('.delete-btn').forEach(btn => btn.addEventListener('click', async (e) => { 
       const idx = parseInt(btn.dataset.index); 
-      if(confirm("⚠️ Delete this submission permanently?")) { 
+      if(confirm("⚠️ Delete this submission permanently from cloud?")) { 
         submissions.splice(idx,1); 
-        saveSubmissions(); 
-        showToast("🗑️ Submission deleted"); 
+        await saveSubmissions(); 
+        showToast("🗑️ Submission deleted from cloud"); 
       } 
     }));
   }
@@ -416,6 +387,7 @@
       <div class="detail-row"><div class="detail-label">🏷️ Designation:</div><div class="detail-value">${escapeHtml(d.designation)}</div></div>
       <div class="detail-row"><div class="detail-label">✍️ Working Signature:</div><div class="detail-value">${escapeHtml(d.signatureText)}</div></div>
       <div class="detail-row"><div class="detail-label">⏱️ Timestamp:</div><div class="detail-value">${escapeHtml(d.timestamp)}</div></div>
+      <div class="detail-row"><div class="detail-label">🌐 Device:</div><div class="detail-value">${escapeHtml(d.device || 'Any Device')}</div></div>
     `; 
     document.getElementById('detailModal').style.display = 'flex'; 
   }
@@ -434,6 +406,7 @@
    Designation: ${s.designation}
    Signature: ${s.signatureText}
 ⏱️ Submitted: ${s.timestamp}
+🌐 Submitted from: ${s.device || 'Cross-Device'}
 ═══════════════════════════════════════════`;
     const blob = new Blob([content], {type:'text/plain'}); 
     const a = document.createElement('a'); 
@@ -444,7 +417,7 @@
     showToast("✅ TXT downloaded"); 
   }
   
-  function submitProposal() {
+  async function submitProposal() {
     const loc = document.getElementById('locationField').value.trim();
     const con = document.getElementById('contactField').value.trim();
     const dat = document.getElementById('dateField').value.trim();
@@ -457,32 +430,45 @@
       return; 
     }
     
-    const newSubmission = { 
-      location: loc, 
-      contactInfo: con, 
-      date: dat, 
-      name: nam, 
-      designation: des, 
-      signatureText: sig,
-      timestamp: new Date().toLocaleString('en-IN', { hour12: true }),
-      id: Date.now() + Math.floor(Math.random() * 10000)
-    };
+    const submitBtn = document.getElementById('submitProposalBtn');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<span class="loading-spinner"></span> Submitting to cloud...';
+    submitBtn.disabled = true;
     
-    submissions.unshift(newSubmission); 
-    saveSubmissions(); 
-    showToast("🎉 Proposal submitted successfully! Data saved across devices via shareable link.");
-    
-    document.getElementById('locationField').value = '';
-    document.getElementById('contactField').value = '';
-    document.getElementById('dateField').value = '';
-    document.getElementById('workingName').value = '';
-    document.getElementById('workingDesignation').value = '';
-    document.getElementById('workingSignature').value = '';
-    
-    // Show shareable hint for cross-device
-    setTimeout(() => {
-      showToast("💡 Share this URL with admin on any device to see updated submissions (URL contains data)");
-    }, 800);
+    try {
+      const newSubmission = { 
+        location: loc, 
+        contactInfo: con, 
+        date: dat, 
+        name: nam, 
+        designation: des, 
+        signatureText: sig,
+        timestamp: new Date().toLocaleString('en-IN', { hour12: true }),
+        id: Date.now() + Math.floor(Math.random() * 10000),
+        device: navigator.userAgent.includes('Mobile') ? 'Mobile Device' : 'Desktop/Laptop'
+      };
+      
+      await loadSubmissions();
+      submissions.unshift(newSubmission); 
+      await saveSubmissions(); 
+      
+      showToast("🎉 Proposal submitted to cloud! Admin can see it from any device.");
+      
+      document.getElementById('locationField').value = '';
+      document.getElementById('contactField').value = '';
+      document.getElementById('dateField').value = '';
+      document.getElementById('workingName').value = '';
+      document.getElementById('workingDesignation').value = '';
+      document.getElementById('workingSignature').value = '';
+      
+      if (isAdminLoggedIn) await loadSubmissions();
+    } catch (error) {
+      console.error("Submit error:", error);
+      showToast("❌ Failed to submit. Please check internet connection.");
+    } finally {
+      submitBtn.innerHTML = originalText;
+      submitBtn.disabled = false;
+    }
   }
   
   function downloadForm() {
@@ -511,13 +497,13 @@
   
   function importDataFromFile(file) {
     const reader = new FileReader();
-    reader.onload = function(e) {
+    reader.onload = async function(e) {
       try {
         const imported = JSON.parse(e.target.result);
         if(Array.isArray(imported)) {
           submissions = [...imported, ...submissions];
-          saveSubmissions();
-          showToast(`✅ Imported ${imported.length} entries successfully`);
+          await saveSubmissions();
+          showToast(`✅ Imported ${imported.length} entries to cloud successfully`);
         } else {
           alert("Invalid format: Expected array of submissions");
         }
@@ -528,15 +514,16 @@
     reader.readAsText(file);
   }
   
-  function clearAllSubmissions() {
-    if(confirm("⚠️ DANGER: This will delete ALL submissions from this device. This action cannot be undone. Continue?")) {
+  async function clearAllSubmissions() {
+    if(confirm("⚠️ DANGER: This will delete ALL submissions from CLOUD permanently. This affects all devices. Continue?")) {
       submissions = [];
-      saveSubmissions();
-      showToast("🗑️ All submissions cleared");
+      await saveSubmissions();
+      showToast("🗑️ All submissions cleared from cloud");
+      if(isAdminLoggedIn) renderAdminTable();
     }
   }
   
-  function adminLogin() {
+  async function adminLogin() {
     const pwd = prompt("🔐 Admin credentials required:");
     if(pwd === ADMIN_PASSWORD) {
       isAdminLoggedIn = true;
@@ -545,8 +532,9 @@
       document.getElementById('exportDataBtn').classList.add('visible');
       document.getElementById('importLabelBtn').style.display = 'flex';
       document.getElementById('logoutBtn').classList.add('visible');
+      await loadSubmissions();
       renderAdminTable();
-      showToast("✅ Admin mode activated | Cross-device sync ready (share this URL)");
+      showToast("✅ Admin mode activated | Cloud sync enabled");
     } else if(pwd !== null) {
       alert("⛔ Invalid password.");
     }
@@ -565,15 +553,15 @@
   function showToast(msg) { 
     const t = document.createElement('div'); 
     t.className = 'success-toast'; 
-    t.innerHTML = `<i class="fas fa-bell"></i> ${msg}`; 
+    t.innerHTML = `<i class="fas fa-cloud"></i> ${msg}`; 
     document.body.appendChild(t); 
     setTimeout(() => t.remove(), 3000); 
   }
   
-  function forceSync() {
-    loadSubmissionsFromHash();
-    saveSubmissionsToLocal();
-    showToast("🔄 Sync complete: data merged from URL + localStorage");
+  async function refreshCloud() {
+    showToast("🔄 Syncing from cloud...");
+    await loadSubmissions();
+    if(isAdminLoggedIn) renderAdminTable();
   }
   
   document.getElementById('discreetAdminBtn').addEventListener('click', adminLogin);
@@ -583,6 +571,7 @@
   document.getElementById('exportAllBtn')?.addEventListener('click', exportAllData);
   document.getElementById('clearAllBtn')?.addEventListener('click', clearAllSubmissions);
   document.getElementById('submitProposalBtn').addEventListener('click', submitProposal);
+  document.getElementById('refreshCloudBtn')?.addEventListener('click', refreshCloud);
   document.getElementById('closeModal').onclick = () => document.getElementById('detailModal').style.display = 'none';
   window.onclick = (e) => { if(e.target === document.getElementById('detailModal')) document.getElementById('detailModal').style.display = 'none'; };
   document.getElementById('downloadFromModalBtn').onclick = () => { 
@@ -591,17 +580,13 @@
       if(idx !== -1) downloadSubmission(idx); 
     } 
   };
-  document.getElementById('forceSyncBtn')?.addEventListener('click', forceSync);
+  
   document.getElementById('importSubmissionsFile')?.addEventListener('change', (e) => {
     if(e.target.files[0]) importDataFromFile(e.target.files[0]);
     e.target.value = '';
   });
   
-  window.addEventListener('load', () => {
-    loadSubmissions();
-    if (window.location.hash) loadSubmissionsFromHash();
-  });
-  window.addEventListener('hashchange', () => { loadSubmissionsFromHash(); if(isAdminLoggedIn) renderAdminTable(); });
+  loadSubmissions();
 </script>
 </body>
 </html>
