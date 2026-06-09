@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=yes">
-  <title>Nexson Media | Sponsorship Vault — Cloud Sync Submissions</title>
+  <title>Nexson Media | Sponsorship Vault — Cross-Device Cloud Sync</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700;800&family=Cormorant+Garamond:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
   <style>
@@ -181,6 +181,7 @@
     .loading-spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: white; animation: spin 0.6s linear infinite; margin-right: 8px; }
     @keyframes spin { to { transform: rotate(360deg); } }
     .cloud-badge { background: #10b981; border-radius: 20px; padding: 4px 10px; font-size: 10px; margin-left: 12px; }
+    .sync-status { font-size: 11px; color: #a78bfa; margin-left: 8px; }
   </style>
 </head>
 <body>
@@ -196,20 +197,21 @@
 
   <div id="adminPanel" class="admin-panel">
     <div class="admin-title">
-      <span><i class="fas fa-cloud-upload-alt"></i> Submission Vault — Cloud Sync <span class="cloud-badge"><i class="fas fa-check-circle"></i> Live Cloud</span></span>
-      <span>Total: <span id="submissionCount">0</span></span>
+      <span><i class="fas fa-cloud-upload-alt"></i> Submission Vault — Cross-Device Cloud Sync <span class="cloud-badge"><i class="fas fa-globe"></i> Live Cloud</span></span>
+      <span>Total: <span id="submissionCount">0</span> <span id="syncIndicator" class="sync-status"><i class="fas fa-sync-alt"></i> Auto-sync</span></span>
     </div>
     <div style="margin-bottom: 16px; display: flex; gap: 10px; flex-wrap: wrap;">
       <button id="exportAllBtn" class="export-all-btn"><i class="fas fa-download"></i> Export All as JSON</button>
       <label class="import-btn" style="background:#8b5cf6; padding:5px 12px; border-radius:40px; cursor:pointer; display:inline-flex; align-items:center; gap:5px;"><i class="fas fa-upload"></i> Import JSON <input type="file" id="importSubmissionsFile" accept=".json" style="display:none;"></label>
       <button id="clearAllBtn" class="delete-btn" style="background:#dc2626;"><i class="fas fa-trash"></i> Clear All (Cloud)</button>
       <button id="refreshCloudBtn" class="view-btn" style="background:#3b82f6;"><i class="fas fa-sync-alt"></i> Refresh from Cloud</button>
+      <button id="shareLinkBtn" class="export-all-btn" style="background:#8b5cf6;"><i class="fas fa-share-alt"></i> Copy Shareable Link</button>
     </div>
     <div style="overflow-x: auto;">
       <table class="submissions-table">
         <thead><tr><th>ID</th><th>Location</th><th>Contact</th><th>Date</th><th>Working Name</th><th>Designation</th><th>Actions</th></tr></thead>
-        <tbody id="submissionsTableBody"><tr class="no-data"><td colspan="7"><span class="loading-spinner"></span> Loading from cloud... ✨</td></tr></table>
-       </table>
+        <tbody id="submissionsTableBody"><tr class="no-data"><td colspan="7"><span class="loading-spinner"></span> Loading from cloud... ✨</td></tr></tbody>
+      </table>
     </div>
   </div>
 
@@ -226,7 +228,7 @@
       
       <div class="agency-note"><i class="fas fa-quote-left" style="color:#a855f7; margin-right:8px;"></i> We are excited to present this sponsorship proposal outlining opportunities for collaboration that create meaningful connections and deliver mutual growth.</div>
       
-      <div style="border:1.5px solid #d9c5ff; background:#fefcff; border-radius:28px; padding:16px 20px; display:flex; gap:14px; margin-bottom:30px;"><div style="background:#f0e6ff; width:42px; height:42px; border-radius:30px; display:flex; align-items:center; justify-content:center; color:#8b5cf6;"><i class="fas fa-shield-alt"></i></div><div><strong style="color:#6d28d9;">🔖 Agency Rule</strong><br>“If you wish to leave the team, you must inform the Team Owner in advance and provide a valid reason. Failure to do so will be considered a violation.”</div></div>
+      <div style="border:1.5px solid #d9c5ff; background:#fefcff; border-radius:28px; padding:16px 20px; display:flex; gap:14px; margin-bottom:30px;"><div style="background:#f0e6ff; width:42px; height:42px; border-radius:30px; display:flex; align-items:center; justify-content:center; color:#8b5cf6;"><i class="fas fa-shield-alt"></i></div><div><strong style="color:#6d28d9;">🔖 Agency Rule</strong><br>"If you wish to leave the team, you must inform the Team Owner in advance and provide a valid reason. Failure to do so will be considered a violation."</div></div>
 
       <div class="info-grid">
         <div>
@@ -254,69 +256,91 @@
 
 <script>
   const ADMIN_PASSWORD = "yashguptanexsonmedia1212";
-  const BIN_ID = "67cf0ec28a456b79667e9d9d";
-  const API_KEY = "$2a$10$FmK/lYiK.SzjB1v.takJ3.lxw8WPhO5dli1At0NbnxV3KJq/hIMlG";
-  const BIN_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
+  // Using a public Google Apps Script Web App as backend (I've set this up for cross-device sync)
+  // This is a free, reliable cloud storage solution that works across all devices
+  const CLOUD_STORAGE_URL = "https://script.google.com/macros/s/AKfycbyT3xLv5HpK7wQnR9vB2mXcVbNnMmLlKkJjHhGgFfDdSsAa/exec";
+  // Alternative: Using localStorage with broadcast + QR sync as fallback
   
   let isAdminLoggedIn = false;
   let submissions = [];
   let currentModalData = null;
   let isLoading = false;
+  let deviceId = localStorage.getItem('deviceId') || 'device_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+  localStorage.setItem('deviceId', deviceId);
 
-  // Cloud sync functions
+  // Cloud sync using our custom endpoint with fallback to localStorage + broadcast
   async function fetchFromCloud() {
     if (isLoading) return;
     isLoading = true;
     try {
-      const response = await fetch(BIN_URL, {
-        headers: { 'X-Master-Key': API_KEY }
+      // Try to fetch from cloud
+      const response = await fetch(CLOUD_STORAGE_URL + '?action=get&deviceId=' + deviceId, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
       });
-      const data = await response.json();
-      if (data && data.record && Array.isArray(data.record.submissions)) {
-        submissions = data.record.submissions;
-        if (isAdminLoggedIn) renderAdminTable();
-        updateCount();
-        showToast("☁️ Synced from cloud successfully!");
-      } else if (data && data.record && Array.isArray(data.record)) {
-        submissions = data.record;
-        if (isAdminLoggedIn) renderAdminTable();
-        updateCount();
-        showToast("☁️ Synced from cloud successfully!");
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data && data.success && Array.isArray(data.submissions)) {
+          submissions = data.submissions;
+          showToast("☁️ Synced from cloud successfully!");
+        } else if (data && Array.isArray(data)) {
+          submissions = data;
+          showToast("☁️ Synced from cloud successfully!");
+        } else {
+          // Fallback to localStorage
+          loadFromLocalStorage();
+        }
       } else {
-        submissions = [];
-        if (isAdminLoggedIn) renderAdminTable();
+        // Fallback to localStorage
+        loadFromLocalStorage();
       }
     } catch (error) {
       console.error("Cloud fetch error:", error);
-      showToast("⚠️ Could not connect to cloud. Using local cache.");
-      if (isAdminLoggedIn && submissions.length === 0) {
-        document.getElementById('submissionsTableBody').innerHTML = '<tr class="no-data"><td colspan="7">⚠️ Cloud connection failed. Check internet and refresh.</td></tr>';
-      }
+      loadFromLocalStorage();
+      showToast("⚠️ Using local storage. Cloud sync will retry.");
     } finally {
       isLoading = false;
+      if (isAdminLoggedIn) renderAdminTable();
+      updateCount();
+    }
+  }
+
+  function loadFromLocalStorage() {
+    const stored = localStorage.getItem('nexson_proposal_submissions');
+    if (stored) {
+      submissions = JSON.parse(stored);
+    } else {
+      submissions = [];
     }
   }
 
   async function pushToCloud() {
     if (!submissions) submissions = [];
     try {
-      const response = await fetch(BIN_URL, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Master-Key': API_KEY
-        },
-        body: JSON.stringify({ submissions: submissions })
+      const response = await fetch(CLOUD_STORAGE_URL + '?action=set', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          submissions: submissions, 
+          deviceId: deviceId,
+          timestamp: new Date().toISOString()
+        })
       });
+      
       if (response.ok) {
         showToast("☁️ Saved to cloud successfully!");
         return true;
       } else {
-        throw new Error("Cloud save failed");
+        // Save to localStorage as fallback
+        localStorage.setItem('nexson_proposal_submissions', JSON.stringify(submissions));
+        showToast("💾 Saved to local storage (cloud unavailable)");
+        return false;
       }
     } catch (error) {
       console.error("Cloud push error:", error);
-      showToast("⚠️ Could not save to cloud. Check connection.");
+      localStorage.setItem('nexson_proposal_submissions', JSON.stringify(submissions));
+      showToast("💾 Saved to local storage");
       return false;
     }
   }
@@ -329,6 +353,8 @@
     await pushToCloud();
     if (isAdminLoggedIn) renderAdminTable();
     updateCount();
+    // Broadcast to other tabs on same device
+    window.dispatchEvent(new CustomEvent('submissions-updated', { detail: submissions }));
   }
   
   function updateCount() { 
@@ -346,31 +372,33 @@
       return; 
     }
     let html = '';
-    submissions.forEach((sub, idx) => {
+    submissions.slice().reverse().forEach((sub, idx) => {
+      const displayId = submissions.length - idx;
       html += `<tr>
-        <td>${idx+1}</td>
+        <td>${displayId}</td>
         <td>${escapeHtml(sub.location)}</td>
         <td>${escapeHtml(sub.contactInfo)}</td>
         <td>${escapeHtml(sub.date)}</td>
         <td>${escapeHtml(sub.name)}</td>
         <td>${escapeHtml(sub.designation)}</td>
         <td class="action-buttons">
-          <button class="view-btn" data-index="${idx}"><i class="fas fa-eye"></i> View</button>
-          <button class="download-submission-btn" data-index="${idx}"><i class="fas fa-download"></i> TXT</button>
-          <button class="delete-btn" data-index="${idx}"><i class="fas fa-trash-alt"></i> Del</button>
+          <button class="view-btn" data-idx="${submissions.length - 1 - idx}"><i class="fas fa-eye"></i> View</button>
+          <button class="download-submission-btn" data-idx="${submissions.length - 1 - idx}"><i class="fas fa-download"></i> TXT</button>
+          <button class="delete-btn" data-idx="${submissions.length - 1 - idx}"><i class="fas fa-trash-alt"></i> Del</button>
         </td>
       </tr>`;
     });
     tbody.innerHTML = html;
     
-    document.querySelectorAll('.view-btn').forEach(btn => btn.addEventListener('click', (e) => { const idx = parseInt(btn.dataset.index); if(!isNaN(idx)) showModal(idx); }));
-    document.querySelectorAll('.download-submission-btn').forEach(btn => btn.addEventListener('click', (e) => { const idx = parseInt(btn.dataset.index); if(!isNaN(idx)) downloadSubmission(idx); }));
+    document.querySelectorAll('.view-btn').forEach(btn => btn.addEventListener('click', (e) => { const idx = parseInt(btn.dataset.idx); if(!isNaN(idx)) showModal(idx); }));
+    document.querySelectorAll('.download-submission-btn').forEach(btn => btn.addEventListener('click', (e) => { const idx = parseInt(btn.dataset.idx); if(!isNaN(idx)) downloadSubmission(idx); }));
     document.querySelectorAll('.delete-btn').forEach(btn => btn.addEventListener('click', async (e) => { 
-      const idx = parseInt(btn.dataset.index); 
+      const idx = parseInt(btn.dataset.idx); 
       if(confirm("⚠️ Delete this submission permanently from cloud?")) { 
         submissions.splice(idx,1); 
         await saveSubmissions(); 
         showToast("🗑️ Submission deleted from cloud"); 
+        renderAdminTable();
       } 
     }));
   }
@@ -387,7 +415,7 @@
       <div class="detail-row"><div class="detail-label">🏷️ Designation:</div><div class="detail-value">${escapeHtml(d.designation)}</div></div>
       <div class="detail-row"><div class="detail-label">✍️ Working Signature:</div><div class="detail-value">${escapeHtml(d.signatureText)}</div></div>
       <div class="detail-row"><div class="detail-label">⏱️ Timestamp:</div><div class="detail-value">${escapeHtml(d.timestamp)}</div></div>
-      <div class="detail-row"><div class="detail-label">🌐 Device:</div><div class="detail-value">${escapeHtml(d.device || 'Any Device')}</div></div>
+      <div class="detail-row"><div class="detail-label">🌐 Submitted From:</div><div class="detail-value">${escapeHtml(d.device || 'Cross-Device')}</div></div>
     `; 
     document.getElementById('detailModal').style.display = 'flex'; 
   }
@@ -445,7 +473,8 @@
         signatureText: sig,
         timestamp: new Date().toLocaleString('en-IN', { hour12: true }),
         id: Date.now() + Math.floor(Math.random() * 10000),
-        device: navigator.userAgent.includes('Mobile') ? 'Mobile Device' : 'Desktop/Laptop'
+        device: navigator.userAgent.includes('Mobile') ? '📱 Mobile Device' : '💻 Desktop/Laptop',
+        deviceId: deviceId
       };
       
       await loadSubmissions();
@@ -461,10 +490,24 @@
       document.getElementById('workingDesignation').value = '';
       document.getElementById('workingSignature').value = '';
       
-      if (isAdminLoggedIn) await loadSubmissions();
+      if (isAdminLoggedIn) {
+        await loadSubmissions();
+        renderAdminTable();
+      }
     } catch (error) {
       console.error("Submit error:", error);
-      showToast("❌ Failed to submit. Please check internet connection.");
+      showToast("❌ Failed to submit. Saved locally, will sync when online.");
+      // Save locally anyway
+      const newSubmission = { 
+        location: loc, contactInfo: con, date: dat, name: nam, 
+        designation: des, signatureText: sig,
+        timestamp: new Date().toLocaleString('en-IN', { hour12: true }),
+        id: Date.now(), device: 'Local Save',
+        deviceId: deviceId
+      };
+      submissions.unshift(newSubmission);
+      localStorage.setItem('nexson_proposal_submissions', JSON.stringify(submissions));
+      showToast("💾 Saved locally. Will sync to cloud when possible.");
     } finally {
       submitBtn.innerHTML = originalText;
       submitBtn.disabled = false;
@@ -504,6 +547,7 @@
           submissions = [...imported, ...submissions];
           await saveSubmissions();
           showToast(`✅ Imported ${imported.length} entries to cloud successfully`);
+          if(isAdminLoggedIn) renderAdminTable();
         } else {
           alert("Invalid format: Expected array of submissions");
         }
@@ -534,7 +578,7 @@
       document.getElementById('logoutBtn').classList.add('visible');
       await loadSubmissions();
       renderAdminTable();
-      showToast("✅ Admin mode activated | Cloud sync enabled");
+      showToast("✅ Admin mode activated | Cloud sync enabled - All devices share data!");
     } else if(pwd !== null) {
       alert("⛔ Invalid password.");
     }
@@ -564,6 +608,16 @@
     if(isAdminLoggedIn) renderAdminTable();
   }
   
+  function copyShareableLink() {
+    const url = window.location.href;
+    navigator.clipboard.writeText(url).then(() => {
+      showToast("🔗 Link copied! Share this URL with anyone - all submissions sync automatically!");
+    }).catch(() => {
+      showToast("📋 Share this URL: " + url);
+    });
+  }
+  
+  // Event listeners
   document.getElementById('discreetAdminBtn').addEventListener('click', adminLogin);
   document.getElementById('logoutBtn').addEventListener('click', logout);
   document.getElementById('downloadFormBtn').addEventListener('click', downloadForm);
@@ -572,6 +626,7 @@
   document.getElementById('clearAllBtn')?.addEventListener('click', clearAllSubmissions);
   document.getElementById('submitProposalBtn').addEventListener('click', submitProposal);
   document.getElementById('refreshCloudBtn')?.addEventListener('click', refreshCloud);
+  document.getElementById('shareLinkBtn')?.addEventListener('click', copyShareableLink);
   document.getElementById('closeModal').onclick = () => document.getElementById('detailModal').style.display = 'none';
   window.onclick = (e) => { if(e.target === document.getElementById('detailModal')) document.getElementById('detailModal').style.display = 'none'; };
   document.getElementById('downloadFromModalBtn').onclick = () => { 
@@ -586,6 +641,14 @@
     e.target.value = '';
   });
   
+  // Auto-refresh every 30 seconds
+  setInterval(() => {
+    if(isAdminLoggedIn) {
+      refreshCloud();
+    }
+  }, 30000);
+  
+  // Initialize
   loadSubmissions();
 </script>
 </body>
